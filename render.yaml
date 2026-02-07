@@ -1,0 +1,50 @@
+# DhruvaNetra Render Deployment Configuration
+# Infrastructure as code - deployment with discipline
+
+services:
+  # Backend API Service
+  - type: web
+    name: dhruva-netra-backend
+    runtime: python
+    region: oregon  # Choose: oregon, frankfurt, singapore, ohio
+    plan: free  # Options: free, starter, standard, pro, pro plus
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    
+    envVars:
+      # Python runtime
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      
+      # Application settings
+      - key: PORT
+        value: 8000
+      
+      # Database - use MongoDB Atlas free tier
+      # Add this in Render dashboard as secret
+      - key: MONGODB_URL
+        sync: false  # Set manually in dashboard
+      
+      - key: DATABASE_NAME
+        value: dhruva_netra
+      
+      # NASA API Key
+      # Get free key from: https://api.nasa.gov/
+      - key: NASA_API_KEY
+        sync: false  # Set manually in dashboard
+      
+      # JWT Secret - MUST be set as secret in dashboard
+      # Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+      - key: JWT_SECRET
+        sync: false  # Set manually in dashboard
+      
+      - key: JWT_ALGORITHM
+        value: HS256
+      
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 1440
+    
+    # Auto-deploy on git push
+    autoDeploy: true
