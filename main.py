@@ -12,6 +12,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 import httpx
 import os
+import requests
 from passlib.context import CryptContext
 import jwt
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -825,4 +826,5 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
