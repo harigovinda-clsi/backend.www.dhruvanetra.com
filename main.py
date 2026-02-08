@@ -12,7 +12,6 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 import httpx
 import os
-import requests
 from passlib.context import CryptContext
 import jwt
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -560,6 +559,42 @@ async def get_neo_feed(
         "near_earth_objects": processed_neos
     }
 
+@app.get("/api/asteroids/live", tags=["Near-Earth Objects"])
+async def get_live_asteroids(current_user: dict = Depends(get_current_user)):
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+
+    data = await nasa_client.get_feed(today, today)
+
+    asteroids = []
+
+    for day, neos in data.get("near_earth_objects", {}).items():
+        for neo in neos:
+            approaches = neo.get("close_approach_data", [])
+            if not approaches:
+                continue
+
+            approach = approaches[0]
+
+            asteroids.append({
+                "id": neo.get("id"),
+                "name": neo.get("name"),
+                "hazard": neo.get("is_potentially_hazardous_asteroid", False),
+                "velocity_kms": round(
+                    float(approach["relative_velocity"]["kilometers_per_second"]), 2
+                ),
+                "distance_au": round(
+                    float(approach["miss_distance"]["astronomical"]), 4
+                ),
+                "approach_date": approach.get("close_approach_date")
+            })
+
+    asteroids.sort(
+        key=lambda x: (not x["hazard"], x["distance_au"])
+    )
+
+    return asteroids
+
+
 @app.get("/api/neo/{neo_id}", tags=["Near-Earth Objects"])
 async def get_neo_details(
     neo_id: str,
@@ -828,3 +863,4 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
